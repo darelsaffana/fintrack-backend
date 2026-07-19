@@ -41,7 +41,10 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar ? asset('storage/'.$this->avatar) : null;
+        if (!$this->avatar) return null;
+        // Gunakan route API khusus untuk menghindari masalah CORS di Flutter Web
+        $filename = basename($this->avatar);
+        return url('/api/avatar/' . $filename);
     }
 
     public function categories(): HasMany
