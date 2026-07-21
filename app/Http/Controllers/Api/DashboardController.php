@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $income = (clone $user->transactions())->where('type', 'income')->sum('amount');
         $expense = (clone $user->transactions())->where('type', 'expense')->sum('amount');
 
-        $recent = $user->transactions()->with('category')->orderByDesc('date')->limit(6)->get();
+        $recent = $user->transactions()->with('category')->orderByDesc('date')->orderByDesc('created_at')->limit(6)->get();
 
         $history = $user->transactions()->orderBy('date')->get(['date', 'type', 'amount']);
         $running = 0;

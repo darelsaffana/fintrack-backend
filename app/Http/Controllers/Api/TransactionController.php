@@ -12,7 +12,7 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->transactions()->with('category')->orderByDesc('date');
+        $query = $request->user()->transactions()->with('category')->orderByDesc('date')->orderByDesc('created_at');
 
         if ($request->has('type')) {
             $query->where('type', $request->query('type'));
