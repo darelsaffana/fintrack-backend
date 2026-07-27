@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -70,6 +71,49 @@ class AuthController extends Controller
         $token = $user->createToken('fintrack-token')->plainTextToken;
 
         return response()->json(['user' => $user, 'token' => $token]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        // Selalu balas pesan yang sama baik email terdaftar atau tidak,
+        // supaya endpoint ini tidak bisa dipakai untuk mengecek email mana yang punya akun.
+        Password::sendResetLink($request->only('email'));
+
+        return response()->json(['message' => 'Jika email terdaftar, kode reset password telah dikirim']);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        $status = Password::reset(
+            $request->only('email', 'token', 'password', 'password_confirmation'),
+            function (User $user, string $password) {
+                $user->update(['password' => Hash::make($password)]);
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Kode reset tidak valid atau sudah kedaluwarsa'], 422);
+        }
+
+        return response()->json(['message' => 'Password berhasil direset']);
     }
 
     public function logout(Request $request)
